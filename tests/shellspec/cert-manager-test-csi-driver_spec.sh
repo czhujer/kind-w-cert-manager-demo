@@ -35,13 +35,13 @@ delete_workload() {
   echo "deleting workload..."
   sleep "0.$(( ( RANDOM % 100 )  + 1 ))"
   #
-  $KUBECTL delete -f tests/assets/cert-manager-csi-driver.yaml
-	$KUBECTL delete -f tests/assets/cert-manager-csi-driver-example-app.yaml
-#    sleep 2s
-	$KUBECTL delete -f tests/assets/cert-manager-issuer-kind-test.yaml
-	$KUBECTL delete -f tests/assets/cert-manager-issuer-kind-ca-test.yaml
-	$KUBECTL delete -f tests/assets/cert-manager-certificate-test1.yaml
-	$KUBECTL delete -f tests/assets/cert-manager-certificate-test2.yaml
+  timeout 1m "$KUBECTL" delete \
+    -f tests/assets/cert-manager-csi-driver.yaml \
+    -f tests/assets/cert-manager-csi-driver-example-app.yaml \
+    -f tests/assets/cert-manager-issuer-kind-test.yaml \
+	  -f tests/assets/cert-manager-issuer-kind-ca-test.yaml \
+	  -f tests/assets/cert-manager-certificate-test1.yaml \
+    -f tests/assets/cert-manager-certificate-test2.yaml
 }
 
 check_cert_ca_in_pod_folder() {
@@ -65,8 +65,8 @@ Describe 'Test cert-manager and cert-manager csi-driver'
     create_workload
   }
   cleanup() {
-#    :
-    delete_workload
+    :
+#    delete_workload
   }
   BeforeAll 'setup'
   AfterAll 'cleanup'

@@ -11,8 +11,11 @@ kubetest-exec-shellspec:
 	kubetest2 kind --test exec -- shellspec --default-path tests/shellspec --load-path tests/shellspec -o j -f d --reportdir ./ tests/shellspec/cert-manager-test-csi-driver_spec.sh
 
 .PHONY: kubetest-down
-kubetest2-down:
+kubetest-down:
 	kubetest2 kind --down
+
+.PHONY: kubetest-all
+kubetest-all: kubetest-up kubetest-cilium-install kubetest-exec-shellspec kubetest-down
 
 .PHONY: deploy-cert-manager
 deploy-cert-manager:

@@ -9,7 +9,8 @@ cilium_install () {
 
 	helm repo add cilium https://helm.cilium.io/
 
-	helm install cilium cilium/cilium --version "${cilium_version}" \
+	helm upgrade --install \
+	  cilium cilium/cilium --version "${cilium_version}" \
 	   --namespace kube-system \
 	   --set nodeinit.enabled=true \
 	   --set kubeProxyReplacement=partial \
@@ -29,4 +30,7 @@ cilium_install () {
 	"$KUBECTL" -n kube-system wait --for=condition=available --timeout=1m deployments.apps coredns || true
 }
 
-time cilium_install
+cilium_install
+
+# enable scheduling workload on master
+"$KUBECTL" taint nodes --all node-role.kubernetes.io/master- || true

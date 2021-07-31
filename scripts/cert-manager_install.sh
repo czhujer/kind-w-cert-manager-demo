@@ -9,7 +9,8 @@ cert-manager_install () {
 
 	helm repo add cert-manager https://charts.jetstack.io
 
-	helm install cert-manager cert-manager/cert-manager --version "${chart_version}" \
+	helm upgrade --install \
+	  cert-manager cert-manager/cert-manager --version "${chart_version}" \
 	   --namespace cert-manager \
 	   --create-namespace \
 	   --values helm-values/cert-manager.yaml
@@ -21,7 +22,4 @@ cert-manager_install () {
 
 }
 
-time cert-manager_install
-
-# enable scheduling workload on master
-kubectl taint nodes --all node-role.kubernetes.io/master- || true
+cert-manager_install
