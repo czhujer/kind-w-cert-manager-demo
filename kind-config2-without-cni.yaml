@@ -1,0 +1,51 @@
+# https://kind.sigs.k8s.io/docs/user/configuration/
+---
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+networking:
+  apiServerAddress: "0.0.0.0"
+  disableDefaultCNI: true
+featureGates:
+  "EphemeralContainers": true
+# add to the apiServer certSANs the name of the docker (dind) service in order to be able to reach the cluster through it
+#kubeadmConfigPatchesJSON6902:
+#  - group: kubeadm.k8s.io
+#    version: v1beta2
+#    kind: ClusterConfiguration
+#    patch: |
+#      - op: add
+#        path: /apiServer/certSANs/-
+#        value: 172.17.0.1
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.21.2@sha256:9d07ff05e4afefbba983fac311807b3c17a5f36e7061f6cb7e2ba756255b2be4
+    # add a mount from ./gitlab on the host to /gitlab on the node
+#    extraMounts:
+#      - hostPath: ./gitlab
+#        containerPath: /gitlab
+# this will broke whole audit logging
+#      - hostPath: ./gitlab-root
+#        containerPath: /gitlab-root
+    # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/control-plane-flags/
+    # https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+          extraArgs:
+            # audit-log-path: /gitlab-root/k8s-audit.log
+            # audit-policy-file: /gitlab/k8s-audit-policy-2.yml
+          # https://github.com/kubernetes/kubeadm/issues/133#issuecomment-587243726
+#          extraVolumes:
+#            - name: "audit-config"
+#              hostPath: /gitlab
+#              mountPath: /gitlab
+#              readOnly: false
+#              pathType: DirectoryOrCreate
+#            - name: "audit-logs"
+#              hostPath: /gitlab-root
+#              mountPath: /gitlab-root
+#              readOnly: false
+#              pathType: DirectoryOrCreate
+#  - role: worker
+#    image: kindest/node:v1.21.2@sha256:9d07ff05e4afefbba983fac311807b3c17a5f36e7061f6cb7e2ba756255b2be4
