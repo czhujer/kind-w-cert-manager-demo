@@ -1,2 +1,3 @@
-/_artifacts/
 /results_junit.xml
+tests/e2e/vendor/
+/tests/e2e/_artifacts/
