@@ -31,4 +31,5 @@
 - https://github.com/IBM/kube-safe-scheduler/blob/master/vendor/k8s.io/kubernetes/test/e2e/kubectl/kubectl.go
 - https://sourcegraph.com/github.com/kubernetes/kubernetes@7681a1bdff0552e0008c805fe56bbbfec85d0624/-/blob/test/e2e/examples.go
 - https://github.com/jetstack/cert-manager/blob/master/test/integration/ctl/ctl_status_certificate_test.go
+- https://sourcegraph.com/github.com/kubernetes/kubernetes@27d32661c259eb70e74e2c526a2b78eaa2c8b3d2/-/blob/test/e2e/network/kube_proxy.go
 - 
