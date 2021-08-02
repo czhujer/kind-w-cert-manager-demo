@@ -7,6 +7,7 @@ import (
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/klog"
@@ -88,12 +89,13 @@ var _ = ginkgo.Describe("e2e cert-manager", func() {
 
 	})
 
-	ginkgo.It("should cert-manager's pods running", func() {
-		str := framework.RunKubectlOrDie(certMangerNamespace, "get", "pods")
-		gomega.Expect(str).Should(gomega.MatchRegexp("cert-manager-"))
-		gomega.Expect(str).Should(gomega.MatchRegexp("cert-manager-cainjector-"))
-		gomega.Expect(str).Should(gomega.MatchRegexp("cert-manager-webhook-"))
-
+	var _ = ginkgo.Describe("--> Server", func() {
+		ginkgo.It("should pods running", func() {
+			str := framework.RunKubectlOrDie(certMangerNamespace, "get", "pods")
+			gomega.Expect(str).Should(gomega.MatchRegexp("cert-manager-"))
+			gomega.Expect(str).Should(gomega.MatchRegexp("cert-manager-cainjector-"))
+			gomega.Expect(str).Should(gomega.MatchRegexp("cert-manager-webhook-"))
+		})
 	})
 
 	var _ = ginkgo.Describe("--> Issuers", func() {
@@ -115,9 +117,27 @@ var _ = ginkgo.Describe("e2e cert-manager", func() {
 		})
 	})
 
-	//ginkgo.It("should provide k8s secret with generated certificate", func() {
-	//	//klog.Infof("Namespace: %v", f.Namespace.Name)
-	//	str := framework.RunKubectlOrDie(certMangerNamespace, "get", "pods")
-	//	gomega.Expect(str).Should(gomega.MatchRegexp(".*cert-manager-cainjector2.*"))
-	//})
+	var _ = ginkgo.Describe("--> Certificates/Secrets", func() {
+		ginkgo.It("should provide cert-key for cert-manager-local-ca", func() {
+			ret, err := f.ClientSet.CoreV1().
+				Secrets("cert-manager-local-ca").
+				Get(context.TODO(), "test1-tls", metav1.GetOptions{})
+			if err != nil {
+				klog.Infof("get secret err: %v", err)
+			}
+			//klog.Infof("get secret ret: %v", ret)
+			gomega.Expect(ret.Name).Should(gomega.MatchRegexp("test1-tls"))
+		})
+		ginkgo.It("should provide cert-key for cert-manager-local-ca2", func() {
+			ret, err := f.ClientSet.CoreV1().
+				Secrets("cert-manager-local-ca2").
+				Get(context.TODO(), "test2-tls", metav1.GetOptions{})
+			if err != nil {
+				klog.Infof("get secret err: %v", err)
+			}
+			//klog.Infof("get secret ret: %v", ret)
+			gomega.Expect(ret.Name).Should(gomega.MatchRegexp("test2-tls"))
+		})
+	})
+
 })
