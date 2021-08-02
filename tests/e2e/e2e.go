@@ -2,31 +2,27 @@ package e2e
 
 import (
 	"bytes"
-	"github.com/onsi/gomega"
-
-	//"context"
-	//"fmt"
-	"k8s.io/klog"
-	//"strconv"
-	//"time"
-
+	"context"
+	"fmt"
+	"github.com/k0kubun/pp"
 	"github.com/onsi/ginkgo"
-	//v1 "k8s.io/api/core/v1"
-
-	//"k8s.io/apimachinery/pkg/util/wait"
+	"github.com/onsi/gomega"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	clientset "k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/test/e2e/framework"
-
-	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	e2ekubectl "k8s.io/kubernetes/test/e2e/framework/kubectl"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	"time"
 )
 
 const (
-	podNetworkAnnotation = "k8s.ovn.org/pod-networks"
-	agnhostImage         = "k8s.gcr.io/e2e-test-images/agnhost:2.26"
-	certManagerFullYaml  = "../assets/cert-manager-full-generated-v1.4.1.yaml"
-	certMangerNamespace  = "cert-manager"
+	//podNetworkAnnotation = "k8s.ovn.org/pod-networks"
+	//agnhostImage         = "k8s.gcr.io/e2e-test-images/agnhost:2.26"
+	certManagerFullYaml = "../assets/cert-manager-full-generated-v1.4.1.yaml"
+	certMangerNamespace = "cert-manager"
 )
 
 func applyManifest(yamlFile string) {
@@ -79,10 +75,10 @@ var _ = ginkgo.Describe("e2e cert-manager", func() {
 	})
 
 	ginkgo.It("should cert-manager Issuer exists", func() {
-		//str := framework.RunKubectlOrDie(certMangerNamespace, "get", "pods")
-		//gomega.Expect(str).Should(gomega.MatchRegexp("cert-manager-"))
-		//gomega.Expect(str).Should(gomega.MatchRegexp("cert-manager-cainjector-"))
-		//gomega.Expect(str).Should(gomega.MatchRegexp("cert-manager-webhook-"))
+		ret, err := getCrdObjects(f.ClientSet)
+		//klog.Infof("XXX crd list: %v", ret)
+		pp.Print(ret)
+		klog.Infof("XXX crd list err: %v", err)
 	})
 
 	//ginkgo.It("should provide k8s secret with generated certificate", func() {
@@ -92,109 +88,25 @@ var _ = ginkgo.Describe("e2e cert-manager", func() {
 	//})
 })
 
-//var _ = ginkgo.Describe("e2e nettest", func() {
-//	var svcname = "nettest"
-//
-//	f := framework.NewDefaultFramework(svcname)
-//
-//	ginkgo.BeforeEach(func() {
-//		// Assert basic external connectivity.
-//		// Since this is not really a test of kubernetes in any way, we
-//		// leave it as a pre-test assertion, rather than a Ginko test.
-//		ginkgo.By("Executing a successful http request from the external internet")
-//		resp, err := http.Get("http://google.com")
-//		if err != nil {
-//			framework.Failf("Unable to connect/talk to the internet: %v", err)
-//		}
-//		if resp.StatusCode != http.StatusOK {
-//			framework.Failf("Unexpected error code, expected 200, got, %v (%v)", resp.StatusCode, resp)
-//		}
-//	})
-//
-//	ginkgo.It("should provide connection to external host by DNS name from a pod", func() {
-//		ginkgo.By("Running container which tries to connect to www.google.com. in a loop")
-//
-//		podChan, errChan := make(chan *v1.Pod), make(chan error)
-//		go func() {
-//			defer ginkgo.GinkgoRecover()
-//			checkContinuousConnectivity(f, "", "connectivity-test-continuous", "www.google.com.", 443, 30, podChan, errChan)
-//		}()
-//
-//		testPod := <-podChan
-//		framework.Logf("Test pod running on %q", testPod.Spec.NodeName)
-//
-//		time.Sleep(10 * time.Second)
-//
-//		framework.ExpectNoError(<-errChan)
-//	})
-//
-//})
+func getCrdObjects(c clientset.Interface) (*apiextensionsv1.CustomResourceDefinitionList, error) {
+	var client restclient.Result
+	finished := make(chan struct{}, 1)
+	go func() {
+		// call chain tends to hang in some cases when Node is not ready. Add an artificial timeout for this call. #22165
+		client = c.CoreV1().RESTClient().Get().
+			AbsPath("/apis/cert-manager.io/v1/namespaces/cert-manager-local-ca/issuers").
+			Do(context.TODO())
 
-//func checkContinuousConnectivity(f *framework.Framework, nodeName, podName, host string, port, timeout int, podChan chan *v1.Pod, errChan chan error) {
-//	contName := fmt.Sprintf("%s-container", podName)
-//
-//	command := []string{
-//		"bash", "-c",
-//		"set -xe; for i in {1..10}; do nc -vz -w " + strconv.Itoa(timeout) + " " + host + " " + strconv.Itoa(port) + "; sleep 2; done",
-//	}
-//
-//	pod := &v1.Pod{
-//		ObjectMeta: metav1.ObjectMeta{
-//			Name: podName,
-//		},
-//		Spec: v1.PodSpec{
-//			Containers: []v1.Container{
-//				{
-//					Name:    contName,
-//					Image:   agnhostImage,
-//					Command: command,
-//				},
-//			},
-//			NodeName:      nodeName,
-//			RestartPolicy: v1.RestartPolicyNever,
-//		},
-//	}
-//	podClient := f.ClientSet.CoreV1().Pods(f.Namespace.Name)
-//	_, err := podClient.Create(context.Background(), pod, metav1.CreateOptions{})
-//	if err != nil {
-//		errChan <- err
-//		return
-//	}
-//
-//	// Wait for pod network setup to be almost ready
-//	wait.PollImmediate(1*time.Second, 30*time.Second, func() (bool, error) {
-//		pod, err := podClient.Get(context.Background(), podName, metav1.GetOptions{})
-//		if err != nil {
-//			return false, nil
-//		}
-//		_, ok := pod.Annotations[podNetworkAnnotation]
-//		return ok, nil
-//	})
-//
-//	err = e2epod.WaitForPodNotPending(f.ClientSet, f.Namespace.Name, podName)
-//	if err != nil {
-//		errChan <- err
-//		return
-//	}
-//
-//	podGet, err := podClient.Get(context.Background(), podName, metav1.GetOptions{})
-//	if err != nil {
-//		errChan <- err
-//		return
-//	}
-//
-//	podChan <- podGet
-//
-//	err = e2epod.WaitForPodSuccessInNamespace(f.ClientSet, podName, f.Namespace.Name)
-//
-//	if err != nil {
-//		logs, logErr := e2epod.GetPodLogs(f.ClientSet, f.Namespace.Name, pod.Name, contName)
-//		if logErr != nil {
-//			framework.Logf("Warning: Failed to get logs from pod %q: %v", pod.Name, logErr)
-//		} else {
-//			framework.Logf("pod %s/%s logs:\n%s", f.Namespace.Name, pod.Name, logs)
-//		}
-//	}
-//
-//	errChan <- err
-//}
+		finished <- struct{}{}
+	}()
+	select {
+	case <-finished:
+		result := &apiextensionsv1.CustomResourceDefinitionList{}
+		if err := client.Into(result); err != nil {
+			return &apiextensionsv1.CustomResourceDefinitionList{}, err
+		}
+		return result, nil
+	case <-time.After(framework.PodStartShortTimeout):
+		return &apiextensionsv1.CustomResourceDefinitionList{}, fmt.Errorf("Waiting up to %v for getting the list of CRDs", framework.PodStartShortTimeout)
+	}
+}
