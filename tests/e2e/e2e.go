@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/k0kubun/pp"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -37,11 +36,34 @@ func applyManifest(yamlFile string) {
 	if err != nil {
 		e2elog.Logf("Command finished with error: %v", err)
 	}
-	outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
-	klog.Infof("command stdout: %v", outStr)
-	klog.Infof("command stderr: %v", errStr)
+	//outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
+	//klog.Infof("command stdout: %v", outStr)
+	//klog.Infof("command stderr: %v", errStr)
 
 	framework.ExpectNoError(err)
+}
+
+func getCrdObjects(c clientset.Interface, absPath string) (*apiextensionsv1.CustomResourceDefinitionList, error) {
+	var client restclient.Result
+	finished := make(chan struct{}, 1)
+	go func() {
+		// call chain tends to hang in some cases when Node is not ready. Add an artificial timeout for this call. #22165
+		client = c.CoreV1().RESTClient().Get().
+			AbsPath(absPath).
+			Do(context.TODO())
+
+		finished <- struct{}{}
+	}()
+	select {
+	case <-finished:
+		result := &apiextensionsv1.CustomResourceDefinitionList{}
+		if err := client.Into(result); err != nil {
+			return &apiextensionsv1.CustomResourceDefinitionList{}, err
+		}
+		return result, nil
+	case <-time.After(framework.PodStartShortTimeout):
+		return &apiextensionsv1.CustomResourceDefinitionList{}, fmt.Errorf("Waiting up to %v for getting the list of CRDs", framework.PodStartShortTimeout)
+	}
 }
 
 var _ = ginkgo.Describe("e2e cert-manager", func() {
@@ -74,11 +96,23 @@ var _ = ginkgo.Describe("e2e cert-manager", func() {
 
 	})
 
-	ginkgo.It("should cert-manager Issuer exists", func() {
-		ret, err := getCrdObjects(f.ClientSet)
-		//klog.Infof("XXX crd list: %v", ret)
-		pp.Print(ret)
-		klog.Infof("XXX crd list err: %v", err)
+	var _ = ginkgo.Describe("--> Issuers", func() {
+		ginkgo.It("should Issuer exists in namespace cert-manager-local-ca", func() {
+			ret, err := getCrdObjects(f.ClientSet, "/apis/cert-manager.io/v1/namespaces/cert-manager-local-ca/issuers")
+			if err != nil {
+				klog.Infof("get crd err: %v", err)
+			}
+			//klog.Infof("XXX crd list: %v", ret)
+			gomega.Expect(ret.Items[0].Name).Should(gomega.MatchRegexp("kind-test-issuer"))
+		})
+		ginkgo.It("should Issuer exists in namespace cert-manager-local-ca2", func() {
+			ret, err := getCrdObjects(f.ClientSet, "/apis/cert-manager.io/v1/namespaces/cert-manager-local-ca2/issuers")
+			if err != nil {
+				klog.Infof("get crd err: %v", err)
+			}
+			//klog.Infof("XXX crd list: %v", ret)
+			gomega.Expect(ret.Items[0].Name).Should(gomega.MatchRegexp("ca-issuer"))
+		})
 	})
 
 	//ginkgo.It("should provide k8s secret with generated certificate", func() {
@@ -87,26 +121,3 @@ var _ = ginkgo.Describe("e2e cert-manager", func() {
 	//	gomega.Expect(str).Should(gomega.MatchRegexp(".*cert-manager-cainjector2.*"))
 	//})
 })
-
-func getCrdObjects(c clientset.Interface) (*apiextensionsv1.CustomResourceDefinitionList, error) {
-	var client restclient.Result
-	finished := make(chan struct{}, 1)
-	go func() {
-		// call chain tends to hang in some cases when Node is not ready. Add an artificial timeout for this call. #22165
-		client = c.CoreV1().RESTClient().Get().
-			AbsPath("/apis/cert-manager.io/v1/namespaces/cert-manager-local-ca/issuers").
-			Do(context.TODO())
-
-		finished <- struct{}{}
-	}()
-	select {
-	case <-finished:
-		result := &apiextensionsv1.CustomResourceDefinitionList{}
-		if err := client.Into(result); err != nil {
-			return &apiextensionsv1.CustomResourceDefinitionList{}, err
-		}
-		return result, nil
-	case <-time.After(framework.PodStartShortTimeout):
-		return &apiextensionsv1.CustomResourceDefinitionList{}, fmt.Errorf("Waiting up to %v for getting the list of CRDs", framework.PodStartShortTimeout)
-	}
-}
