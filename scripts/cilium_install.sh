@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cilium_version="1.10.3"
+cilium_version="1.11.5"
 
 KUBECTL=kubectl
 
