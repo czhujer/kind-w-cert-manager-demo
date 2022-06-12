@@ -1,11 +1,11 @@
 ---
-image:
-  tag: v1.4.0
+#image:
+#  tag: v1.8.0
 installCRDs: true
 prometheus:
   enabled: true
   servicemonitor:
     enabled: false
-webhook:
-  image:
-    tag: v1.4.0
+#webhook:
+#  image:
+#    tag: v1.8.0
