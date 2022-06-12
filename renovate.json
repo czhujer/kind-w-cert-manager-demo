@@ -1,0 +1,9 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "kubernetes": {
+    "fileMatch": ["^tests/assets/.*\\.yaml$",
+    "kind-config.*\\.yaml$"]
+  }
+}

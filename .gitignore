@@ -4,3 +4,5 @@ tests/e2e/_artifacts/
 !/tests/e2e/_artifacts/
 tests/e2e/_artifacts/*
 tests/e2e/_artifacts/**
+/_artifacts/
+/.idea/
