@@ -1,6 +1,6 @@
 #!/bin/bash
 
-chart_version="1.4.0"
+chart_version="1.8.0"
 
 KUBECTL=kubectl
 
