@@ -4,7 +4,7 @@ env:
   TRIVY_EXIT_CODE: 1
   TRIVY_IGNORE_UNFIXED: true
   # TRIVY_SKIP_FILES: "tests/assets"
-  TRIVY_SKIP_FILES: "tests/assets"
+  TRIVY_SKIP_DIRS: "tests/assets"
 
 on:
   workflow_dispatch:
