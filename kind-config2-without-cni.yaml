@@ -18,7 +18,7 @@ featureGates:
 #        value: 172.17.0.1
 nodes:
   - role: control-plane
-    image: kindest/node:v1.27.1@sha256:f957f0636f30b105e15ed00932b25d175eaf08d5d11735e8d6ec73325ebd5b02
+    image: kindest/node:v1.27.1@sha256:4992b70e56a3de9c917adfb4fefe24ca2ee6fb1b8f3e31257e9ae8836ab8a271
     # add a mount from ./gitlab on the host to /gitlab on the node
 #    extraMounts:
 #      - hostPath: ./gitlab
